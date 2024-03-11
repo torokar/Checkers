@@ -1,5 +1,3 @@
-
-//Шашки
 #include <SFML/Graphics.hpp>
 #include <iostream>
 
@@ -17,19 +15,45 @@ int main()
     const float cellSize = 400.0f / size;
     sf::Color color;
 
+    // Загрузка текстуры белых и черных шашек 
     sf::Texture whiteCheckerTexture;
-    if (!whiteCheckerTexture.loadFromFile("Image/white_checker.png")) {
+    if (!whiteCheckerTexture.loadFromFile("Image/cheker_white.png")) {
         return 1;
     }
 
     sf::Texture blackCheckerTexture;
-    if (!blackCheckerTexture.loadFromFile("Image/black_checker.png")) {
+    if (!blackCheckerTexture.loadFromFile("Image/black_check.png")) {
         return 1;
     }
 
-    /*sf::CircleShape checker(cellSize / 2);
-    checker.setOrigin(cellSize / 2, cellSize / 2);*/
+    // Загрузка текстуры доски
+    sf::Texture boardTexture;
+    if (!boardTexture.loadFromFile("Image/111.png")) {
+        return 1;
+    }
 
+    // Создание спрайта с текстурой доски
+    sf::Sprite boardSprite(boardTexture);
+
+    // Создание двумерного массива для хранения шашек на доске
+    bool board[size][size] = { false };
+
+    // Расстановка черных шашек
+    for (int i = 0; i < size; i++) {
+        for (int a = 0; a < 3; a++) { // Верхние три ряда
+            if ((i + a) % 2 != 0) {
+                board[i][a] = true;
+            }
+        }
+    }
+    // Расстановка белых шашек
+    for (int i = 0; i < size; i++) {
+        for (int a = size - 3; a < size; a++) { // Нижние три ряда
+            if ((i + a) % 2 != 0) {
+                board[i][a] = true;
+            }
+        }
+    }
 
     while (win.isOpen())
     {
@@ -38,56 +62,48 @@ int main()
         {
             if (event.type == sf::Event::Closed)
                 win.close();
+
+            // Обработка события нажатия кнопки мыши
+            if (event.type == sf::Event::MouseButtonPressed) {
+                if (event.mouseButton.button == sf::Mouse::Left) {
+                    sf::Vector2i mousePos = sf::Mouse::getPosition(win);
+                    int cellX = mousePos.x / cellSize;
+                    int cellY = mousePos.y / cellSize;
+
+                    // Проверка на клик 
+                    if (cellX >= 0 && cellX < size && cellY >= 0 && cellY < size) {
+                        // Проверка, что на этой клетке есть шашка
+                        if (board[cellX][cellY]) {
+                            std::cout << "The checker is located  (" << cellX << ", " << cellY << ")" << std::endl;
+                        }
+                    }
+                }
+            }
         }
 
         win.clear();
 
-        // Рисование игрового поля
+        // Отрисовка спрайта с текстурой доски
+        win.draw(boardSprite);
+
+        // Рисование шашек
         for (int i = 0; i < size; i++) {
             for (int a = 0; a < size; a++) {
-                if ((i + a) % 2 == 0) {
-                    color = sf::Color(245, 222, 179);
-                }
-                else {
-                    color = sf::Color(139, 69, 19);
-                }
-                sf::RectangleShape cell(sf::Vector2f(cellSize, cellSize));
-                cell.setPosition(i * cellSize, a * cellSize);
-                cell.setFillColor(color);
-                win.draw(cell);
-            }
-        }
-
-        // Расстановка белых шашек
-
-
-        for (int i = 0; i < size; i++) {
-            for (int a = size - 3; a < size; a++) { // Нижние три ряда
-                if ((i + a) % 2 != 0) {
+                if (board[i][a]) {
                     sf::CircleShape checker(cellSize / 2);
                     checker.setOrigin(cellSize / 2, cellSize / 2);
                     checker.setPosition((i + 0.5f) * cellSize, (a + 0.5f) * cellSize);
-                    checker.setTexture(&whiteCheckerTexture);
+                    if (a < 3)
+                        checker.setTexture(&blackCheckerTexture);
+                    else
+                        checker.setTexture(&whiteCheckerTexture);
                     win.draw(checker);
                 }
             }
         }
 
-        // Расстановка черных шашек
-        ;
-        for (int i = 0; i < size; i++) {
-            for (int a = 0; a < 3; a++) { // Верхние три ряда
-                if ((i + a) % 2 != 0) {
-
-                    sf::CircleShape checker(cellSize / 2);
-                    checker.setOrigin(cellSize / 2, cellSize / 2);
-                    checker.setPosition((i + 0.5f) * cellSize, (a + 0.5f) * cellSize);
-                    checker.setTexture(&blackCheckerTexture);
-                    win.draw(checker);
-                }
-            }
-        }
         win.display();
     }
+
     return 0;
 }
