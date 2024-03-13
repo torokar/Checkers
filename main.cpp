@@ -3,7 +3,7 @@
 
 int main()
 {
-    sf::RenderWindow win(sf::VideoMode(400, 400), L"Шашки ");
+    sf::RenderWindow win(sf::VideoMode(500, 500), L"Шашки ");
     sf::Image icon;
     if (!icon.loadFromFile("Image/chess.png"))
     {
@@ -12,10 +12,10 @@ int main()
     win.setIcon(32, 32, icon.getPixelsPtr());
 
     const int size = 8; // Размер доски
-    const float cellSize = 400.0f / size;
+    const float cellSize = 500.0f / size;
     sf::Color color;
 
-    // Загрузка текстуры белых и черных шашек 
+    //текстуры белых и черных шашек 
     sf::Texture whiteCheckerTexture;
     if (!whiteCheckerTexture.loadFromFile("Image/cheker_white.png")) {
         return 1;
@@ -26,16 +26,15 @@ int main()
         return 1;
     }
 
-    // Загрузка текстуры доски
+    // текстура доски 
     sf::Texture boardTexture;
-    if (!boardTexture.loadFromFile("Image/111.png")) {
+    if (!boardTexture.loadFromFile("Image/222.png")) { 
         return 1;
     }
 
-    // Создание спрайта с текстурой доски
+    // текстура доски 
     sf::Sprite boardSprite(boardTexture);
 
-    // Создание двумерного массива для хранения шашек на доске
     bool board[size][size] = { false };
 
     // Расстановка черных шашек
@@ -54,6 +53,8 @@ int main()
             }
         }
     }
+    bool isChecker = false;
+    sf::Vector2i selectedCheker;
 
     while (win.isOpen())
     {
@@ -74,7 +75,14 @@ int main()
                     if (cellX >= 0 && cellX < size && cellY >= 0 && cellY < size) {
                         // Проверка, что на этой клетке есть шашка
                         if (board[cellX][cellY]) {
+                            isChecker = true;
+                            selectedCheker = sf::Vector2i(cellX, cellY);
                             std::cout << "The checker is located  (" << cellX << ", " << cellY << ")" << std::endl;
+                        }
+                        else if ((cellX + cellY) % 2 != 0) {
+                            board[cellX][cellY] = true;
+                            board[selectedCheker.x][selectedCheker.y] = false;
+                            isChecker = false;
                         }
                     }
                 }
@@ -83,7 +91,7 @@ int main()
 
         win.clear();
 
-        // Отрисовка спрайта с текстурой доски
+        // Отрисовка доски
         win.draw(boardSprite);
 
         // Рисование шашек
