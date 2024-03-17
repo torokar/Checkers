@@ -18,18 +18,18 @@ int main()
     //текстуры белых и черных шашек 
     sf::Texture whiteCheckerTexture;
     if (!whiteCheckerTexture.loadFromFile("Image/cheker_white.png")) {
-        return 1;
+        return 2;
     }
 
     sf::Texture blackCheckerTexture;
     if (!blackCheckerTexture.loadFromFile("Image/black_check.png")) {
-        return 1;
+        return 3;
     }
 
     // текстура доски 
     sf::Texture boardTexture;
-    if (!boardTexture.loadFromFile("Image/222.png")) { 
-        return 1;
+    if (!boardTexture.loadFromFile("Image/222.png")) {
+        return 4;
     }
 
     // текстура доски 
@@ -53,8 +53,8 @@ int main()
             }
         }
     }
-    bool isChecker = false;
-    sf::Vector2i selectedCheker;
+    bool isCheckerSelected = false;
+    sf::Vector2i selectedCheckerPos;
 
     while (win.isOpen())
     {
@@ -75,14 +75,20 @@ int main()
                     if (cellX >= 0 && cellX < size && cellY >= 0 && cellY < size) {
                         // Проверка, что на этой клетке есть шашка
                         if (board[cellX][cellY]) {
-                            isChecker = true;
-                            selectedCheker = sf::Vector2i(cellX, cellY);
-                            std::cout << "The checker is located  (" << cellX << ", " << cellY << ")" << std::endl;
+                            isCheckerSelected = true;
+                            selectedCheckerPos = sf::Vector2i(cellX, cellY);
                         }
-                        else if ((cellX + cellY) % 2 != 0) {
-                            board[cellX][cellY] = true;
-                            board[selectedCheker.x][selectedCheker.y] = false;
-                            isChecker = false;
+                        else if (isCheckerSelected) {
+                            // Проверка, что выбрана черная клетка
+                            if ((cellX + cellY) % 2 != 0 && !board[cellX][cellY]) {
+                                // Проверка, что новая клетка находится в пределах доски
+                                if (cellX >= 0 && cellX < size && cellY >= 0 && cellY < size) {
+                                    // Перемещение шашки на новую позицию
+                                    board[cellX][cellY] = true;
+                                    board[selectedCheckerPos.x][selectedCheckerPos.y] = false;
+                                    isCheckerSelected = false;
+                                }
+                            }
                         }
                     }
                 }
