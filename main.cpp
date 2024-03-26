@@ -1,124 +1,152 @@
-
 #include <SFML/Graphics.hpp>
-#include <iostream>
 
-int main()
-{
-    sf::RenderWindow win(sf::VideoMode(500, 500), L"Шашки ");
-    sf::Image icon;
-    if (!icon.loadFromFile("Image/chess.png"))
-    {
-        return 1;
-    }
-    win.setIcon(32, 32, icon.getPixelsPtr());
+const int tileSize = 80; // Размер одной клетки на доске
+const int boardSize = 8; // Размер доски (8x8)
+const int windowWidth = tileSize * boardSize;
+const int windowHeight = tileSize * boardSize;
 
-    const int size = 8; // Размер доски
-    const float cellSize = 500.0f / size;
-    sf::Color color;
+enum class PieceType { None, White, Black };
 
-    //текстуры белых и черных шашек 
-    sf::Texture whiteCheckerTexture;
-    if (!whiteCheckerTexture.loadFromFile("Image/cheker_white.png")) {
-        return 2;
-    }
+struct Piece {
+    PieceType type;
+    sf::CircleShape shape;
+    sf::Vector2i position;
+};
 
-    sf::Texture blackCheckerTexture;
-    if (!blackCheckerTexture.loadFromFile("Image/black_check.png")) {
-        return 3;
+class Game {
+public:
+    Game() : window(sf::VideoMode(windowWidth, windowHeight), "Checkers") {
+        initializePieces();
+        drawBoard();
     }
 
-    // текстура доски 
-    sf::Texture boardTexture;
-    if (!boardTexture.loadFromFile("Image/222.png")) {
-        return 4;
+    void run() {
+        while (window.isOpen()) {
+            handleEvents();
+        }
     }
 
-    // текстура доски 
-    sf::Sprite boardSprite(boardTexture);
+private:
+    sf::RenderWindow window;
+    std::vector<std::vector<Piece>> board;
+    bool isPieceSelected = false;
+    sf::Vector2i selectedPiecePosition;
 
-    bool board[size][size] = { false };
-
-    // Расстановка черных шашек
-    for (int i = 0; i < size; i++) {
-        for (int a = 0; a < 3; a++) { // Верхние три ряда
-            if ((i + a) % 2 != 0) {
-                board[i][a] = true;
+    void initializePieces() {
+        // ррасстановка шашек
+        board.resize(boardSize, std::vector<Piece>(boardSize, { PieceType::None, sf::CircleShape(tileSize / 2) }));
+        for (int i = 0; i < boardSize; ++i) {
+            for (int j = 0; j < boardSize; ++j) {
+                if ((i + j) % 2 != 0 && j < 3) {
+                    board[i][j].type = PieceType::Black;
+                    board[i][j].shape.setFillColor(sf::Color::Black);
+                    board[i][j].shape.setPosition(i * tileSize + (tileSize - board[i][j].shape.getRadius() * 2) / 2,
+                        j * tileSize + (tileSize - board[i][j].shape.getRadius() * 2) / 2);
+                    board[i][j].position = { i, j };
+                }
+                else if ((i + j) % 2 != 0 && j > 4) {
+                    board[i][j].type = PieceType::White;
+                    board[i][j].shape.setFillColor(sf::Color::White);
+                    board[i][j].shape.setPosition(i * tileSize + (tileSize - board[i][j].shape.getRadius() * 2) / 2,
+                        j * tileSize + (tileSize - board[i][j].shape.getRadius() * 2) / 2);
+                    board[i][j].position = { i, j };
+                }
             }
         }
     }
-    // Расстановка белых шашек
-    for (int i = 0; i < size; i++) {
-        for (int a = size - 3; a < size; a++) { // Нижние три ряда
-            if ((i + a) % 2 != 0) {
-                board[i][a] = true;
+
+    void drawBoard() {
+        for (int i = 0; i < boardSize; ++i) {
+            for (int j = 0; j < boardSize; ++j) {
+                sf::RectangleShape square(sf::Vector2f(tileSize, tileSize));
+                if ((i + j) % 2 == 0) {
+                    square.setFillColor(sf::Color(255, 206, 158)); // белый цвет 
+                }
+                else {
+                    square.setFillColor(sf::Color(164, 98, 32)); // черный цвет 
+                }
+                square.setPosition(i * tileSize, j * tileSize);
+                window.draw(square);
+                if (board[i][j].type != PieceType::None) {
+                    window.draw(board[i][j].shape);
+                }
             }
         }
+        window.display();
     }
-    bool isCheckerSelected = false;
-    sf::Vector2i selectedCheckerPos;
 
-    while (win.isOpen())
-    {
+    void handleEvents() {
         sf::Event event;
-        while (win.pollEvent(event))
-        {
-            if (event.type == sf::Event::Closed)
-                win.close();
-
-            // Обработка события нажатия кнопки мыши
-            if (event.type == sf::Event::MouseButtonPressed) {
+        while (window.pollEvent(event)) {
+            if (event.type == sf::Event::Closed) {
+                window.close();
+            }
+            else if (event.type == sf::Event::MouseButtonPressed) {
                 if (event.mouseButton.button == sf::Mouse::Left) {
-                    sf::Vector2i mousePos = sf::Mouse::getPosition(win);
-                    int cellX = mousePos.x / cellSize;
-                    int cellY = mousePos.y / cellSize;
-
-                    // Проверка на клик 
-                    if (cellX >= 0 && cellX < size && cellY >= 0 && cellY < size) {
-                        // Проверка, что на этой клетке есть шашка
-                        if (board[cellX][cellY]) {
-                            isCheckerSelected = true;
-                            selectedCheckerPos = sf::Vector2i(cellX, cellY);
+                    sf::Vector2i mousePosition = sf::Mouse::getPosition(window);
+                    int tileX = mousePosition.x / tileSize;
+                    int tileY = mousePosition.y / tileSize;
+                    if (isPieceSelected) {
+                        if (isValidMove(selectedPiecePosition, { tileX, tileY })) {
+                            movePiece(selectedPiecePosition, { tileX, tileY });
                         }
-                        else if (isCheckerSelected) {
-                            // Проверка, что выбрана черная клетка
-                            if ((cellX + cellY) % 2 != 0 && !board[cellX][cellY]) {
-                                // Проверка, что новая клетка находится в пределах доски
-                                if (cellX >= 0 && cellX < size && cellY >= 0 && cellY < size) {
-                                    // Перемещение шашки на новую позицию
-                                    board[cellX][cellY] = true;
-                                    board[selectedCheckerPos.x][selectedCheckerPos.y] = false;
-                                    isCheckerSelected = false;
-                                }
-                            }
+                        isPieceSelected = false;
+                    }
+                    else {
+                        if (board[tileX][tileY].type != PieceType::None) {
+                            isPieceSelected = true;
+                            selectedPiecePosition = { tileX, tileY };
                         }
                     }
+                    drawBoard();
                 }
             }
         }
-
-        win.clear();
-
-        // Отрисовка доски
-        win.draw(boardSprite);
-
-        // Рисование шашек
-        for (int i = 0; i < size; i++) {
-            for (int a = 0; a < size; a++) {
-                if (board[i][a]) {
-                    sf::CircleShape checker(cellSize / 2);
-                    checker.setOrigin(cellSize / 2, cellSize / 2);
-                    checker.setPosition((i + 0.5f) * cellSize, (a + 0.5f) * cellSize);
-                    if (a < 3)
-                        checker.setTexture(&blackCheckerTexture);
-                    else
-                        checker.setTexture(&whiteCheckerTexture);
-                    win.draw(checker);
-                }
-            }
-        }
-
-        win.display();
     }
+
+    bool isValidMove(const sf::Vector2i& from, const sf::Vector2i& to) {
+        if (to.x < 0 || to.x >= boardSize || to.y < 0 || to.y >= boardSize) {
+            // Проверка на выход за границы доски
+            return false; 
+        }
+
+        // Проверяем, что перемещаемся только на черные клетки
+        if ((to.x + to.y) % 2 == 0) {
+            return false;
+        }
+
+        // условия чтобы шашки не двигались назад(если они не дамка)
+        if (board[from.x][from.y].type == PieceType::Black && to.y <= from.y) {
+            return false;
+        }
+        if (board[from.x][from.y].type == PieceType::White && to.y >= from.y) {
+            return false;
+        }
+
+        //проверка что ход делается только на одну клетку по диагонали
+        if (board[to.x][to.y].type != PieceType::None) {
+            return false;
+        }
+
+        //проверка что ход делается только на одну клетку по диагонали
+        int dx = std::abs(to.x - from.x);
+        int dy = std::abs(to.y - from.y);
+        return dx == 1 && dy == 1;
+    }
+
+    void movePiece(const sf::Vector2i& from, const sf::Vector2i& to) {
+        board[to.x][to.y] = board[from.x][from.y];
+        board[from.x][from.y].type = PieceType::None;
+        board[from.x][from.y].shape.setFillColor(sf::Color::Transparent);
+        board[to.x][to.y].shape.setPosition(to.x * tileSize + (tileSize - board[to.x][to.y].shape.getRadius() * 2) / 2,
+            to.y * tileSize + (tileSize - board[to.x][to.y].shape.getRadius() * 2) / 2);
+        drawBoard();
+    }
+};
+
+int main() {
+    Game game;
+    game.run();
 
     return 0;
 }
